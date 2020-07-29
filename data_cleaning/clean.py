@@ -38,10 +38,11 @@ def clean_new_enrollment(excel_file, out_folder):
 
 def clean_academic_level(excel_file, out_folder):
     # TODO change hyphen to null
-    df = pd.read_excel(excel_file, sheet_name=1)
-    df.columns = df.iloc[1].values
-    df = df.iloc[2:38]
-    write_csv(df, excel_file, out_folder)
+    df = pd.read_excel(excel_file)
+    # df.columns = df.iloc[1].values
+    print(df)
+    # df = df.iloc[2:38]
+    # write_csv(df, excel_file, out_folder)
 
 def clean_places_of_origin(excel_file, out_folder):
     df = pd.read_excel(excel_file)
@@ -55,6 +56,6 @@ if __name__ == "__main__":
     out_folder = dir_path + '/cleaned_data_files'
     # clean_new_enrollment('data_files/Census-New-Enrollment-2009-2019.xlsx', 
     #     out_folder)
-    # clean_academic_level('data_files/Census-Academic-Level.xlsx', out_folder)
-    clean_places_of_origin('data_files/Census-All-Places-of-Origin.xlsx',
-        out_folder)
+    clean_academic_level('data_files/Census-Academic-Level.xlsx', out_folder)
+    # clean_places_of_origin('data_files/Census-All-Places-of-Origin.xlsx',
+    #     out_folder)

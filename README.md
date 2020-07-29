@@ -1,12 +1,21 @@
 # CS498 Narrative Visualization Project
+
 Narrative Visualization Project for Graduation Course
 
 ## Instructions and FAQ
 
 * Are frameworks allowed?
-    - Nope. Let's stick with just D3 for your handin to keep things fair and for more accurate grading. You should then make a fancier version with reveal.js and other libraries to impress your friends, family, employer, etc.
 
-* You're project will be graded best if you clearly stick to one of the forms: martini glass, interactive slide show or drill down story, and your scenes are individual pages. While I encourage you to be creative and also consider hybrids of these hybrid narrative forms, you should do that for a subsequent version that you can use to impress your friends, family, colleagues and employers. Sticking closely to the form will better communicate to the TA's that you understand and can implement the concepts of narrative visualization.
+  * we'll allow libraries to be used for the narrative visualization project, so long as these libraries are not used for the construction of any charts. For example, we will allow bootstrap, react, angular. We still insist on d3 only (plus HTML, CSS and SVG of course) for the charts, so for example annotations should be made by hand and not using an extension like d3-annotation
+
+  * Projects that use these forbidden libraries for charts will lose up to 5% off their project grade.
+
+  * ALLOWED topojson/leaflet
+
+  * NOT ALLOWED d3 scale chromatic, d3-annotation
+
+* You're project will be graded best if you clearly stick to one of the forms: martini glass, interactive slide show or drill down story, and your scenes are individual pages.
+  * Sticking closely to the form will better communicate to the TA's that you understand and can implement the concepts of narrative visualization.
 
 ## Tasks
 
@@ -25,28 +34,37 @@ What is the message you are trying to communicate with the narrative visualizati
 
 #### Narrative Structure
 
-Which structure was your narrative visualization designed to follow (martini glass, interactive slide show or drop-down story)? How does your narrative visualization follow that structure? (All of these structures can include the opportunity to "drill-down" and explore. The difference is where that opportunity happens in the structure.)
+* Which structure was your narrative visualization designed to follow (martini glass, interactive slide show or drop-down story)?
+* How does your narrative visualization follow that structure? (All of these structures can include the opportunity to "drill-down" and explore. The difference is where that opportunity happens in the structure.)
 
 #### Visual Structure
 
-What visual structure is used for each scene? How does it ensure the viewer can understand the data and navigate the scene? How does it highlight to urge the viewer to focus on the important parts of the data in each scene? How does it help the viewer transition to other scenes, to understand how the data connects to the data in other scenes?
+* What visual structure is used for each scene?
+* How does it ensure the viewer can understand the data and navigate the scene?
+* How does it highlight to urge the viewer to focus on the important parts of the data in each scene?
+* How does it help the viewer transition to other scenes, to understand how the data connects to the data in other scenes?
 
 #### Scenes
 
-What are the scenes of your narrative visualization? How are the scenes ordered, and why?
+* What are the scenes of your narrative visualization?
+* How are the scenes ordered, and why?
 
 #### Annotations
 
-What template was followed for the annotations, and why that template? How are the annotations used to support the messaging? Do the annotations change within a single scene, and if so, how and why?
+* What template was followed for the annotations, and why that template?
+* How are the annotations used to support the messaging?
+* Do the annotations change within a single scene, and if so, how and why?
 
 #### Parameters
 
-What are the parameters of the narrative visualization? What are the states of the narrative visualization? How are the parameters used to define the state and each scene?
+* What are the parameters of the narrative visualization?
+* What are the states of the narrative visualization?
+* How are the parameters used to define the state and each scene?
 
 #### Triggers
 
-What are the triggers that connect user actions to changes of state in the narrative visualization? What affordances are provided to the user to communicate to them what options are available to them in the narrative visualization?
-
+* What are the triggers that connect user actions to changes of state in the narrative visualization?
+* What affordances are provided to the user to communicate to them what options are available to them in the narrative visualization?
 
 ## Resources
 
@@ -75,10 +93,3 @@ Fields of Study by Place of Origin <https://opendoorsdata.org/data/international
 Leading Institutions by Instituation Type <https://opendoorsdata.org/data/international-students/leading-institutions-by-institutional-type/>
 
 Primary Source of Funding <https://opendoorsdata.org/data/international-students/international-students-primary-source-of-funding/>
-
-
-
-
-
-
-
