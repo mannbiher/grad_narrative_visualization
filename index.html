@@ -70,9 +70,12 @@
         yScale = d3.scaleBand()
           .domain(data.map(d => d.institute))
           .range([0, newHeight])
-
+        
+        // [min, max] = d3.extent(data, d=>d.total)
+        // min = getNearestMin(min)
+        // max = getNearestMax(max)
         xScale = d3.scaleLinear()
-          .domain(d3.extent(d => d.total))
+          .domain(d3.extent(data, d=>d.total))
           .range([0, newWidth])
 
         chart = initChart('#viz3', width, height, margin)
@@ -88,23 +91,28 @@
           .call(d3.axisLeft(yScale))
 
         colors = ['red', 'yellow', 'blue', 'green']
+        const colorScale = d3.scaleOrdinal()
+          .domain(data.map(d=>d.institute))
+          .range(colors)
 
         console.log(stackedData)
 
-        var groups = chart.selectAll("g.ins")
+        var groups = chart
+          .append('g')
+          .selectAll('g')
           .data(stackedData)
           .enter()
-          .append("g")
-          .attr('class', 'ins')
-          .style("fill", function (d, i) { return colors[i] })
+          .append('g')
+          // .attr('class', 'ins')
+          .style('fill', function (d, i) { return colors[i] })
 
-        var rects = groups.selectAll("rect")
+        var rects = groups.selectAll('rect')
 
           .data(function(d) { console.log('here',d);return d; })
       .enter().append("rect")
-        .attr("x", function(d) { return xScale(sum(d=>d.x)); })
+        .attr("x", function(d) { console.log('x',d); return xScale(d.x); })
         .attr("y", function(d) { return yScale(d.y); })
-        // .attr("height", function(d) { return yScale(d[0]) - yScale(d[1]); })
+        .attr("height", function(d) { return xScale(d.x); })
         .attr("width",yScale.bandwidth())
       }
 
