@@ -1,0 +1,5 @@
+institute,undergraduate,graduate,opt,non-degree,total
+A dummy institue,2000,3000,200,10,
+another dummy institue,1000,229292,222,199,
+Another more dummy,20202,198,28282,6782,
+This is best dummy,1000,400,299,8999,

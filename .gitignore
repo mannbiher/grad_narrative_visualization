@@ -105,3 +105,8 @@ dist
 
 # vscode IDE
 .vscode/
+
+# secrets
+.secret
+.secrets
+scratchbook.txt

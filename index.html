@@ -1,12 +1,221 @@
 <!doctype html>
 <html lang="en">
+
 <head>
+  <!-- <link rel="icon" href="data:;base64,iVBORw0KGgo="> -->
   <meta charset="utf-8">
   <title>Hello World</title>
 </head>
+
 <body>
-  Hello World!
+  <div id="viz">
+  </div>
+  <div id="viz2">
+  </div>
+  <div id="viz3">
+
+  </div>
   <script src="https://d3js.org/d3.v5.min.js"></script>
-  
+  <script src="https://unpkg.com/topojson@3"></script>
+  <script>
+    function getNearestMin(value) {
+      const divisor = 10 ** Math.floor(Math.log10(value))
+      return Math.floor(value / divisor) * divisor
+    }
+
+    function getNearestMax(value) {
+      const divisor = 10 ** Math.floor(Math.log10(value))
+      return Math.ceil(value / divisor) * divisor
+    }
+
+    function initChart(selector, width, height, margin) {
+      const chart = d3.select(selector)
+        .append('svg')
+        .attr('viewbox', `0 0 ${width} ${height}`)
+        .attr('width', width)
+        .attr('height', height)
+        .append('g')
+        .attr('translate', `transform(${margin.left},${margin.top})`)
+      return chart
+    }
+  </script>
+  <script>
+    (function () {
+      const margin = { top: 200, right: 10, bottom: 30, left: 600 }
+      const height = 600
+      const width = 2000
+      const newHeight = height - margin.top - margin.bottom
+      const newWidth = width - margin.left - margin.right
+      const csv_url = '/data_cleaning/dummy_data_files/students_by_institution.txt'
+
+
+      async function init(csvUrl) {
+        const data = await d3.csv(csv_url)
+        console.log(data)
+        data.forEach(d => {
+          d['non-degree'] = +d['non-degree']
+          d.graduate = +d.graduate
+          d.undergraduate = +d.undergraduate
+          d.opt = +d.opt
+          d.total = d['non-degree'] + d.graduate + d.undergraduate + d.opt
+        })
+
+        stackedData = ['non-degree', 'graduate', 'undergraduate', 'opt'].map(
+          function (degree) {
+            return data.map(d => ({ x: d[degree], y: d.institute }))
+          })
+
+        stack = d3.stack()(stackedData)
+
+        yScale = d3.scaleBand()
+          .domain(data.map(d => d.institute))
+          .range([0, newHeight])
+
+        xScale = d3.scaleLinear()
+          .domain(d3.extent(d => d.total))
+          .range([0, newWidth])
+
+        chart = initChart('#viz3', width, height, margin)
+
+        chart
+          .append("g")
+          .attr("transform", "translate(0," + newHeight + ")")
+          .call(d3.axisBottom(xScale))
+
+
+        chart.append('g')
+          .attr('transform', `translate(50,0)`)
+          .call(d3.axisLeft(yScale))
+
+        colors = ['red', 'yellow', 'blue', 'green']
+
+        console.log(stackedData)
+
+        var groups = chart.selectAll("g.ins")
+          .data(stackedData)
+          .enter()
+          .append("g")
+          .attr('class', 'ins')
+          .style("fill", function (d, i) { return colors[i] })
+
+        var rects = groups.selectAll("rect")
+
+          .data(function(d) { console.log('here',d);return d; })
+      .enter().append("rect")
+        .attr("x", function(d) { return xScale(sum(d=>d.x)); })
+        .attr("y", function(d) { return yScale(d.y); })
+        // .attr("height", function(d) { return yScale(d[0]) - yScale(d[1]); })
+        .attr("width",yScale.bandwidth())
+      }
+
+      init()
+    })()
+
+  </script>
+  <script>
+    mapUrl = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
+    function initMap(world) {
+      var svg = d3.select("#viz2").append("svg")
+        .attr('height', 1000)
+        .attr('width', 1000)
+      const projection = d3.geoMercator()
+        .scale(153)
+        .translate(500, 500)
+        .precision(.1)
+
+      var path = d3.geoPath().projection(d3.geoMercator());
+
+      svg.selectAll("path")
+        .data(topojson.feature(world, world.objects.countries).features)
+        .enter().append("path")
+        .attr("d", path)
+
+    }
+
+    async function loadMap(mapUrl) {
+      data = await d3.json(mapUrl)
+
+      initMap(data)
+
+
+
+
+    }
+
+
+    // Draw map
+    loadMap(mapUrl)
+
+  </script>
+  <script>
+
+    function getXScale(data, width) {
+      return d3.scaleTime()
+        .domain(d3.extent(data, d => d.Year))
+        .range([0, width])
+
+    }
+
+    function getYScale(data, height) {
+      [min, max] = d3.extent(data, d => d.Total)
+      min = getNearestMin(min)
+      max = getNearestMax(max)
+      console.log(min, max)
+
+      return d3.scaleLinear()
+        .domain([min, max])
+        .range([height, 0])
+
+    }
+
+    async function init() {
+      const csv_url = '/data_cleaning/cleaned_data_files/Census-Academic-Level.csv'
+      const margin = { top: 200, right: 100, bottom: 30, left: 200 }
+      const height = 600
+      const width = 1080
+      const newHeight = height - margin.top - margin.bottom
+      const newWidth = width - margin.left - margin.right
+
+
+      data = await d3.csv(csv_url)
+      data = data.slice(-10)
+      // clean data
+      data.forEach(i => {
+        i.Year = d3.timeParse('%Y/%m')(i.Year)
+        i.Total = +i.Total
+      })
+      chart = initChart('#viz', width, height, margin)
+      xScale = getXScale(data, newWidth)
+      yScale = getYScale(data, newHeight)
+      console.log(d3.extent(data, d => d.Total))
+
+      chart
+        .append("g")
+        .attr("transform", "translate(0," + newHeight + ")")
+        .call(d3.axisBottom(xScale))
+
+
+      chart.append('g')
+        .attr('transform', `translate(50,0)`)
+        .call(d3.axisLeft(yScale))
+
+      chart.append("path")
+        .datum(data)
+        .attr("fill", "none")
+        .attr("stroke", "steelblue")
+        .attr("stroke-width", 1.5)
+        .attr("d", d3.line()
+          .x(d => xScale(d.Year))
+          .y(d => yScale(d.Total))
+        )
+
+
+      console.log(data)
+    }
+
+    init()
+
+  </script>
 </body>
+
 </html>
