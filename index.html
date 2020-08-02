@@ -83,7 +83,7 @@
 
         }
         async function loadData() {
-          data = await d3.csv('/data_cleaning/cleaned_data_files/Census-Top-25-Institutions.csv')
+          data = await d3.csv('./data_cleaning/cleaned_data_files/Census-Top-25-Institutions.csv')
           data.forEach(d => {
             d.Rank = +d.Rank
             d.Year = d.Year.slice(0, 2) + d.Year.slice(5, 7)
@@ -203,7 +203,7 @@
         const width = 768
         const newHeight = height - margin.top - margin.bottom
         const newWidth = width - margin.left - margin.right
-        const csv_url = '/data_cleaning/dummy_data_files/students_by_institution.txt'
+        const csv_url = './data_cleaning/dummy_data_files/students_by_institution.txt'
 
 
         async function init(csvUrl) {
@@ -285,7 +285,7 @@
 
         async function loadData(year, mapData) {
 
-          data = await d3.csv('/data_cleaning/cleaned_data_files/Census-All-Places-of-Origin.csv')
+          data = await d3.csv('./data_cleaning/cleaned_data_files/Census-All-Places-of-Origin.csv')
           // parse all numbers
           data.forEach(d => {
             for (const [key, value] of Object.entries(d)) {
@@ -561,7 +561,7 @@
       }
 
       async function init() {
-        const csv_url = '/data_cleaning/cleaned_data_files/Census-Academic-Level.csv'
+        const csv_url = './data_cleaning/cleaned_data_files/Census-Academic-Level.csv'
         const margin = { top: 30, right: 100, bottom: 30, left: 60 }
         const height = 500
         const width = 900
