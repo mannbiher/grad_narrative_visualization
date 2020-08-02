@@ -4,25 +4,124 @@
 <head>
   <!-- <link rel="icon" href="data:;base64,iVBORw0KGgo="> -->
   <meta charset="utf-8">
-  <title>Hello World</title>
+  <title>International Students in U.S.</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
+    integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+
 </head>
 
 <body>
-  <h1>International Students in U.S.</h1>
-  <p></p>
-  <a href="#viz">1</a>
-  <a href="#viz2">2</a>
-  <a href="#viz3">3</a>
-  <div id="viz">
+  <div class=container>
+    <h1>International Students in U.S.</h1>
+    <nav>
+      <ul class="pagination">
+        <li class="page-item active"><a class="page-link" href="#" id="viz-link">1</a></li>
+        <li class="page-item">
+          <a class="page-link" href="#" id="viz2-link">2</a>
+        </li>
+        <li class="page-item"><a class="page-link" href="#" id="viz3-link">3</a></li>
+
+      </ul>
+    </nav>
+    <div class="row">
+      <select id='viz3-year' style="display: block;"></select>
+    </div>
+    <div id="viz" class="row">
+    </div>
+    <div id="viz2" class="row" style="display: none;">
+    </div>
+    <div id="viz3" class="row" style="display: none;">
+    </div>
   </div>
-  <div id="viz2">
-  </div>
-  <select id='viz3-year'></select>
-  <div id="viz3">
-  </div>
+
+
+
+
   <script src="https://d3js.org/d3.v5.min.js"></script>
-  <script src="https://unpkg.com/topojson@3"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
   <script>
+    var div = d3.select("body").append("div")
+     .attr("class", "tooltip-donut")
+     .style("opacity", 0);
+
+    function removeHash() {
+      var scrollV, scrollH, loc = window.location;
+      if ("pushState" in history)
+        history.pushState("", document.title, loc.pathname + loc.search);
+      else {
+        // Prevent scrolling by storing the page's current scroll offset
+        scrollV = document.body.scrollTop;
+        scrollH = document.body.scrollLeft;
+
+        loc.hash = "";
+
+        // Restore the scroll offset, should be flicker free
+        document.body.scrollTop = scrollV;
+        document.body.scrollLeft = scrollH;
+      }
+    }
+
+    function removeClass(className, classToRemove) {
+      classes = className.match(/\S+/g) || []
+      classes = classes.filter(d => d !== classToRemove)
+      return classes.join(' ')
+    }
+
+    function addClass(className, classToAdd) {
+      classes = className.match(/\S+/g) || []
+      classes = classes.filter(d => d !== classToAdd)
+      classes.push(classToAdd)
+      return classes.join(' ')
+    }
+
+    function removeActive() {
+      activeLink = d3.select('nav ul.pagination li.page-item.active')
+      className = activeLink.attr('class')
+      className = removeClass(className, 'active')
+      activeLink.attr('class', className)
+    }
+
+    function onClick() {
+      allTargetIds = ['#viz', '#viz2', '#viz3']
+      targetId = '#' + d3.select(this).attr('id').slice(0, -5)
+
+      target = d3.select(targetId)
+
+      otherTargets = allTargetIds
+        .filter(d => d !== targetId)
+        .map(d => d3.select(d))
+      console.log(otherTargets)
+
+      removeActive()
+      parentNode = d3.select(this.parentNode)
+      parentClass = parentNode.attr('class')
+      parentClass = addClass(parentClass, 'active')
+      parentNode.attr('class', parentClass)
+
+      if (target.style('display') === 'none') {
+        target
+          .style('display', null)
+
+        otherTargets.forEach(d => {
+          d.style('display', 'none')
+
+
+        })
+
+      }
+    }
+    (function () {
+      vizLink = d3.select('#viz-link')
+        .on('click', onClick)
+      vizLink = d3.select('#viz2-link')
+        .on('click', onClick)
+      vizLink = d3.select('#viz3-link')
+        .on('click', onClick)
+
+
+
+    })()
+
     function getNearestMin(value) {
       const precision = 10 ** Math.floor(Math.log10(value))
       return Math.floor(value / precision) * precision
@@ -58,7 +157,7 @@
       (function () {
         const margin = { top: 10, right: 10, bottom: 30, left: 250 }
         const height = 400
-        const width = 900
+        const width = 768
         const newHeight = height - margin.top - margin.bottom
         const newWidth = width - margin.left - margin.right
         const svgSelector = '#viz3'
@@ -144,7 +243,17 @@
             .attr('width', d => xScale(d.Students))
             .attr('height', yScale.bandwidth())
             .attr('fill', 'steelblue')
-          console.log('bars', bars)
+            .on('mouseover', function (d, i) {
+              d3.select(this).transition()
+                .duration('50')
+                .attr('opacity', '.85')
+            })
+            .on('mouseout', function (d, i) {
+              d3.select(this).transition()
+                .duration('50')
+                .attr('opacity', '1')
+            })
+          // console.log('bars', bars)
 
           function onSelectUpdate(selectedValue) {
             console.log(selectedOption)
@@ -193,87 +302,6 @@
         }
 
         render()
-      })()
-
-  </script>
-  <script>
-      (function () {
-        const margin = { top: 200, right: 10, bottom: 30, left: 100 }
-        const height = 600
-        const width = 768
-        const newHeight = height - margin.top - margin.bottom
-        const newWidth = width - margin.left - margin.right
-        const csv_url = './data_cleaning/dummy_data_files/students_by_institution.txt'
-
-
-        async function init(csvUrl) {
-          const data = await d3.csv(csv_url)
-          console.log(data)
-          data.forEach(d => {
-            d['non-degree'] = +d['non-degree']
-            d.graduate = +d.graduate
-            d.undergraduate = +d.undergraduate
-            d.opt = +d.opt
-            d.total = d['non-degree'] + d.graduate + d.undergraduate + d.opt
-          })
-
-          stackedData = ['non-degree', 'graduate', 'undergraduate', 'opt'].map(
-            function (degree) {
-              return data.map(d => ({ x: d[degree], y: d.institute }))
-            })
-
-          stack = d3.stack()(stackedData)
-
-          yScale = d3.scaleBand()
-            .domain(data.map(d => d.institute))
-            .range([0, newHeight])
-
-          // [min, max] = d3.extent(data, d=>d.total)
-          // min = getNearestMin(min)
-          // max = getNearestMax(max)
-          xScale = d3.scaleLinear()
-            .domain(d3.extent(data, d => d.total))
-            .range([0, newWidth])
-
-          chart = initChart('#viz3', width, height, margin)
-
-          chart
-            .append("g")
-            .attr("transform", "translate(0," + newHeight + ")")
-            .call(d3.axisBottom(xScale))
-
-
-          chart.append('g')
-            // .attr('transform', `translate(50,0)`)
-            .call(d3.axisLeft(yScale))
-
-          colors = ['red', 'yellow', 'blue', 'green']
-          const colorScale = d3.scaleOrdinal()
-            .domain(data.map(d => d.institute))
-            .range(colors)
-
-          console.log(stackedData)
-
-          var groups = chart
-            .append('g')
-            .selectAll('g')
-            .data(stackedData)
-            .enter()
-            .append('g')
-            // .attr('class', 'ins')
-            .style('fill', function (d, i) { return colors[i] })
-
-          var rects = groups.selectAll('rect')
-
-            .data(function (d) { console.log('here', d); return d; })
-            .enter().append("rect")
-            .attr("x", function (d) { console.log('x', d); return xScale(d.x); })
-            .attr("y", function (d) { return yScale(d.y); })
-            .attr("height", function (d) { return xScale(d.x); })
-            .attr("width", yScale.bandwidth())
-        }
-
-        //init()
       })()
 
   </script>
@@ -340,7 +368,7 @@
             .data(topojson.feature(world, world.objects.countries).features)
             .enter().append("path")
             .attr("d", path)
-            .attr('fill', '#E5E2E0')
+            .attr('fill', '#bdbdbd')
 
           return svg
 
@@ -564,7 +592,7 @@
         const csv_url = './data_cleaning/cleaned_data_files/Census-Academic-Level.csv'
         const margin = { top: 30, right: 100, bottom: 30, left: 60 }
         const height = 500
-        const width = 900
+        const width = 768
         const newHeight = height - margin.top - margin.bottom
         const newWidth = width - margin.left - margin.right
 
