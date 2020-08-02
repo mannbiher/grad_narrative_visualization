@@ -131,33 +131,79 @@
 
   </script>
   <script>
+    
+
+    function getPercentage(worldData, itemValue, year) {
+      for (const[key, value] of Object.entries(worldData)) {
+        if ((key.slice(0, 2) + key.slice(5, 7))==year) {
+          return itemValue/value*100
+        }
+      }
+
+    }
+    async function loadData(year, mapData) {
+
+      data = await d3.csv('/data_cleaning/cleaned_data_files/Census-All-Places-of-Origin.csv')
+      // parse all numbers
+      data.forEach(d=>{
+        for (const [key, value] of Object.entries(d)) {
+          if (key != 'Place of Origin' && key != 'country_code') {
+            d[key] = +value.replaceAll(',','')
+          }
+        }
+      })
+
+      // console.log('mapDisplayData', data)
+      worldData = data.filter(d => d['Place of Origin'] == 'WORLD TOTAL')
+      console.log(worldData)
+      data = data.filter(d => d.country_code)
+      console.log('mapDisplayData', data)
+
+      data = data.map(d=>{
+        let newdata = {
+          'country': d['Place of Origin'],
+          'country_code': d['country_code']
+        }
+        for (const [key, value] of Object.entries(d)) {
+          if ((key.slice(0, 2) + key.slice(5, 7))==year) {
+            newdata[year] = getPercentage(worldData,value,year)
+          }
+        }
+        return newdata      
+
+      })
+
+
+      console.log('mapDisplayData', data)
+      return data
+    }
+
+
     mapUrl = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
     function initMap(world) {
       var svg = d3.select("#viz2").append("svg")
-        .attr('height', 1000)
-        .attr('width', 1000)
+        .attr('height', 400)
+        .attr('width', 768)
       const projection = d3.geoMercator()
-        .scale(153)
-        .translate(500, 500)
+        .scale(120)
+        .translate([400, 250])
         .precision(.1)
 
-      var path = d3.geoPath().projection(d3.geoMercator());
+
+      var path = d3.geoPath().projection(projection);
 
       svg.selectAll("path")
         .data(topojson.feature(world, world.objects.countries).features)
         .enter().append("path")
         .attr("d", path)
+        .attr('fill', '#424244')
 
     }
 
     async function loadMap(mapUrl) {
-      data = await d3.json(mapUrl)
-
-      initMap(data)
-
-
-
-
+      mapData = await d3.json(mapUrl)
+      mapDisplayData = await loadData('2019')
+      initMap(mapData)
     }
 
 
@@ -201,7 +247,7 @@
       // data.forEach(d=>console.log(d.Year.slice(0,7)))
       // clean data
       data = data.map(d => ({
-        Year: d3.timeParse('%Y')(d.Year.slice(0, 2)+d.Year.slice(5,7)),
+        Year: d3.timeParse('%Y')(d.Year.slice(0, 2) + d.Year.slice(5, 7)),
         Total: +d['TOTAL INTERNATIONAL STUDENTS']
       }))
 

@@ -141,7 +141,7 @@ def clean_all_places_of_origin_csv():
     mapping = get_country_isocode_mapping()
     df = df.assign(country_code=df['Place of Origin'].map(mapping))
     df = df.replace('-', np.nan)
-   
+    print(df)
     # print(country_mapping)
     write_csv(df, csv_file, out_folder)
 
