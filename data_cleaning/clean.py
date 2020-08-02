@@ -151,12 +151,15 @@ def clean_all_places_of_origin_csv():
     csv_file = out_folder + '/Census-All-Places-of-Origin.csv'
     df = pd.read_csv(csv_file)
     # df = df.iloc[:264, 1:12]
+
+    df = pd.melt(df, id_vars=['Place of Origin'],
+                 var_name='year', value_name='students')
     mapping = get_country_isocode_mapping()
     longitude_mapping, latititude_mapping = get_country_geolocation()
     df = df.assign(country_code=df['Place of Origin'].map(mapping))
-    df = df.assign(longitude=df['country_code'].map(
+    df = df.assign(long=df['country_code'].map(
         longitude_mapping))
-    df = df.assign(latitude=df['country_code'].map(
+    df = df.assign(lat=df['country_code'].map(
         latititude_mapping))
     df = df.replace('-', np.nan)
     print(df)

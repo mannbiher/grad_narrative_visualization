@@ -7,19 +7,19 @@
   <title>International Students in U.S.</title>
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
     integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
-<style>
-  div.viz3-tooltip {
-     position: absolute;
-     text-align: center;
-     padding: .5rem;
-     background: #FFFFFF;
-     color: #313639;
-     border: 1px solid #313639;
-     border-radius: 8px;
-     pointer-events: none;
-     font-size: .8rem;
-}
-</style>
+  <style>
+    div.tooltip {
+      position: absolute;
+      text-align: center;
+      padding: .5rem;
+      background: #FFFFFF;
+      color: #313639;
+      border: 1px solid #313639;
+      border-radius: 8px;
+      pointer-events: none;
+      font-size: .8rem;
+    }
+  </style>
 </head>
 
 <body>
@@ -36,7 +36,7 @@
       </ul>
     </nav>
     <div class="row">
-      <select id='viz3-year'></select>
+      <select id='year-select'></select>
     </div>
     <div id="viz" class="row">
     </div>
@@ -52,6 +52,7 @@
   <script src="https://d3js.org/d3.v5.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
   <script>
+    // Global functions
     function numberWithCommas(x) {
       return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     }
@@ -93,6 +94,12 @@
       activeLink.attr('class', className)
     }
 
+    function createTooltip(className) {
+      return d3.select("body").append("div")
+        .attr("class", className)
+        .style("opacity", 0);
+    }
+
     function onClick() {
       allTargetIds = ['#viz', '#viz2', '#viz3']
       targetId = '#' + d3.select(this).attr('id').slice(0, -5)
@@ -102,7 +109,7 @@
       otherTargets = allTargetIds
         .filter(d => d !== targetId)
         .map(d => d3.select(d))
-      console.log(otherTargets)
+      // console.log(otherTargets)
 
       removeActive()
       parentNode = d3.select(this.parentNode)
@@ -122,6 +129,9 @@
 
       }
     }
+
+
+
     (function () {
       vizLink = d3.select('#viz-link')
         .on('click', onClick)
@@ -163,6 +173,7 @@
 
     // global variables
     const width = 768
+    const selectSelector = '#year-select'
 
   </script>
   <script>
@@ -173,8 +184,7 @@
         const newHeight = height - margin.top - margin.bottom
         const newWidth = width - margin.left - margin.right
         const svgSelector = '#viz3'
-        const selectSelector = '#viz3-year'
-        const tooltipClass = 'viz3-tooltip'
+        const tooltipClass = 'tooltip'
 
         function getXScale(data, width) {
           return d3.scaleLinear()
@@ -224,11 +234,7 @@
 
         }
 
-        function createTooltip(className) {
-          return d3.select("body").append("div")
-            .attr("class", className)
-            .style("opacity", 0);
-        }
+
 
         async function render() {
           chart = initChart(svgSelector, width, height, margin)
@@ -270,7 +276,7 @@
               tipDiv.transition()
                 .duration(50)
                 .style("opacity", 1)
-              
+
               html = `Students: ${numberWithCommas(d.Students)}`
               tipDiv.html(html)
                 .style("left", (d3.event.pageX + 10) + "px")
@@ -288,7 +294,7 @@
           // console.log('bars', bars)
 
           function onSelectUpdate(selectedValue) {
-            console.log(selectedOption)
+            // console.log(selectedOption)
             data = filterData(origData, selectedOption)
             xScale = getXScale(data, newWidth)
             yScale = getYScale(data, newHeight)
@@ -300,7 +306,7 @@
             yAxis.transition()
               .duration(1000)
               .call(d3.axisLeft(yScale))
-            console.log(data)
+            // console.log(data)
 
             bars.data(data)
               .enter()
@@ -324,7 +330,7 @@
           }
 
           d3.select(selectSelector).on(
-            'change', function (d) {
+            'change.bars', function (d) {
               selectedOption = d3.select(this).property('value')
               onSelectUpdate(selectedOption)
             }
@@ -339,60 +345,50 @@
   </script>
   <script>
       (function () {
-        function filterData(data, year) {
+        const width = 900
+        const height = 500
+        const csvUrl = './data_cleaning/cleaned_data_files/Census-All-Places-of-Origin.csv'
+        const mapUrl = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
+        const vizSelector = '#viz2'
 
+        function filterData(data, year) {
+          console.log('map filter', data, year)
+          return data.filter(d => d.year === year)
+            .sort((a, b) => b.students - a.students).slice(0, 10)
+        }
+
+        function latestYear(data) {
+          return data.sort((a, b) => b.year - a.year)[0].year
         }
 
         async function loadData(year, mapData) {
-
-          data = await d3.csv('./data_cleaning/cleaned_data_files/Census-All-Places-of-Origin.csv')
+          let data = await d3.csv(csvUrl)
           // parse all numbers
+          const worldDataMap = {}
+          data.filter(d => d['Place of Origin'] == 'WORLD TOTAL')
+            .forEach(d => worldDataMap[d.year] = +d.students.replace(/,/g, ''))
+
+          // console.log('worldMap', worldDataMap)
+
           data.forEach(d => {
-            for (const [key, value] of Object.entries(d)) {
-              if (key != 'Place of Origin' && key != 'country_code'
-                && key != 'longitude' && key != 'latitude') {
-                new_key = key.slice(0, 2) + key.slice(5, 7)
-                d[new_key] = +value.replace(/,/g, '')
-                delete d[key]
-              }
-            }
+            d.students = +d.students.replace(/,/g, '')
+            d.percentage = d.students / worldDataMap[d.year] * 100
+            d.country = d['Place of Origin']
+            delete d['Place of Origin']
+            d.year = d.year.slice(0, 2) + d.year.slice(5, 7)
           })
 
-          // console.log('mapDisplayData', data)
-          worldData = data.filter(d => d['Place of Origin'] == 'WORLD TOTAL')[0]
-          console.log(worldData)
+          // filter only valid countries
           data = data.filter(d => d.country_code)
-          console.log('mapDisplayData', data)
-
-          data = data.map(d => {
-            let newdata = {
-              'country': d['Place of Origin'],
-              'country_code': d['country_code'],
-              'long': +d['longitude'],
-              'lat': +d['latitude']
-            }
-            for (const [key, value] of Object.entries(d)) {
-              if (key === year) {
-                newdata[year] = value / worldData[year] * 100
-              }
-            }
-            return newdata
-
-          }).sort((a, b) => b[year] - a[year]).slice(0, 10)
-
-
-          console.log('mapDisplayData', data)
+          // console.log('mapDisplayData', data)
           return data
+
         }
 
-
-        mapUrl = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
-        function initMap(world, projection) {
-          var svg = d3.select("#viz2").append("svg")
-            .attr('height', 550)
-            .attr('width', 900)
-
-
+        function initMap(selector, world, projection) {
+          var svg = d3.select(selector).append("svg")
+            .attr('height', height)
+            .attr('width', width)
 
           var path = d3.geoPath().projection(projection);
 
@@ -407,13 +403,22 @@
         }
 
         async function loadMap(mapUrl) {
-          mapData = await d3.json(mapUrl)
-          mapDisplayData = await loadData('2019')
+          const mapData = await d3.json(mapUrl)
+          const mapOriginalDisplayData = await loadData()
+
+          // console.log(d3.select('selectSelector'))
+          selectedYear = d3.select(selectSelector) && d3.select(selectSelector).property('value')
+
+          selectedYear = selectedYear || latestYear(mapOriginalDisplayData)
+
+          mapDisplayData = filterData(mapOriginalDisplayData, selectedYear)
+          // console.log('filtered data', mapDisplayData)
           const projection = d3.geoMercator()
             .scale(152)
             .translate([400, 350])
             .precision(.1)
-          svg = initMap(mapData, projection)
+
+          svg = initMap(vizSelector, mapData, projection)
           var size = d3.scaleLog()
             .domain([1, 100])  // What's in the data
             .range([1, 60])  // Size in pixel
@@ -423,32 +428,137 @@
             .range([1, 10])
 
 
-
-          svg
+          const circles = svg
             .selectAll("myCircles")
             .data(mapDisplayData)
             .enter()
             .append("circle")
             .attr("cx", d => projection([d.long, d.lat])[0])
             .attr("cy", d => projection([d.long, d.lat])[1])
-            .attr("r", d => size(d['2019']))
+            .attr("r", d => size(d.percentage))
             .style("fill", "steelblue")
             // .attr("stroke", "white")
             // .attr("stroke-width", 1)
             .attr("fill-opacity", .9)
 
-          svg
+
+          const texts = svg
             .selectAll('mapText')
             .data(mapDisplayData)
             .enter()
             .append('text')
             .attr('x', d => projection([d.long, d.lat])[0])
             .attr('y', d => projection([d.long, d.lat])[1])
-            .text(d => Math.round(d['2019']) + '%')
+            .text(d => Math.round(d.percentage) + '%')
             .style('font-size', '14')
             .style('font-weight', 'bold')
             .style('font-family', 'sans-serif')
             .attr('text-anchor', 'middle')
+
+          const mapTipDiv = createTooltip('tooltip')
+          circles
+            .on('mouseover', function (d, i) {
+              d3.select(this).transition()
+                .duration('50')
+                .attr('opacity', '.85')
+
+              mapTipDiv.transition()
+                .duration(50)
+                .style("opacity", 1)
+
+              const html = `<p>${d.country}: ${d.percentage.toFixed(2)}</p>`
+
+              mapTipDiv.html(html)
+                .style("left", (d3.event.pageX + 10) + "px")
+                .style("top", (d3.event.pageY - 15) + "px");
+
+
+            })
+            .on('mouseout', function (d, i) {
+              d3.select(this).transition()
+                .duration('50')
+                .attr('opacity', '1')
+              mapTipDiv.transition()
+                .duration('50')
+                .style("opacity", 0)
+            });
+
+          texts
+            .on('mouseover', function (d, i) {
+              d3.select(this).transition()
+                .duration('50')
+                .attr('opacity', '.85')
+
+              mapTipDiv.transition()
+                .duration(50)
+                .style("opacity", 1)
+
+              const html = `<p>${d.country}: ${d.percentage.toFixed(2)}</p>`
+
+              mapTipDiv.html(html)
+                .style("left", (d3.event.pageX + 10) + "px")
+                .style("top", (d3.event.pageY - 15) + "px");
+
+
+            })
+            .on('mouseout', function (d, i) {
+              d3.select(this).transition()
+                .duration('50')
+                .attr('opacity', '1')
+              mapTipDiv.transition()
+                .duration('50')
+                .style("opacity", 0)
+            });
+
+
+          function onSelectUpdate(selectedValue) {
+            // console.log(selectedOption)
+            const filteredData = filterData(mapOriginalDisplayData, selectedOption)
+            console.log(filteredData)
+            circles.data(filteredData)
+              .enter()
+              .append("circle")
+              .attr("cx", d => projection([d.long, d.lat])[0])
+              .attr("cy", d => projection([d.long, d.lat])[1])
+              .attr("r", d => size(d.percentage))
+              .style("fill", "steelblue")
+              // .attr("stroke", "white")
+              // .attr("stroke-width", 1)
+              .attr("fill-opacity", .9)
+
+
+            circles.transition()
+              .duration(1000)
+              .attr("cx", d => projection([d.long, d.lat])[0])
+              .attr("cy", d => projection([d.long, d.lat])[1])
+              .attr("r", d => size(d.percentage))
+
+            texts.data(filteredData)
+              .enter()
+              .append('text')
+              .attr('x', d => projection([d.long, d.lat])[0])
+              .attr('y', d => projection([d.long, d.lat])[1])
+              .text(d => Math.round(d.percentage) + '%')
+              .style('font-size', '14')
+              .style('font-weight', 'bold')
+              .style('font-family', 'sans-serif')
+              .attr('text-anchor', 'middle')
+
+            texts.transition()
+              .duration(1000)
+              .attr('x', d => projection([d.long, d.lat])[0])
+              .attr('y', d => projection([d.long, d.lat])[1])
+              .text(d => Math.round(d.percentage) + '%')
+
+          }
+
+
+          d3.select(selectSelector).on(
+            'change.map', function (d) {
+              selectedOption = d3.select(this).property('value')
+              onSelectUpdate(selectedOption)
+            }
+          )
 
         }
 
@@ -458,6 +568,7 @@
       })();
   </script>
   <script>
+    // Line chart
     (function () {
 
       function getAnnotations() {
@@ -497,7 +608,7 @@
 
 
         radius = Math.sqrt((secondPosy - firstPosy) ** 2 + (secondPosx - firstPosx) ** 2) / 2
-        console.log('annotations', firstPosx, secondPosx, firstPosy, secondPosy, radius)
+        // console.log('annotations', firstPosx, secondPosx, firstPosy, secondPosy, radius)
         chart
           .append('g')
           .append('circle')
@@ -591,7 +702,7 @@
         max = getNearestMax(max)
         // add 50,000 more 
         max += 50000
-        console.log('min max', min, max)
+        // console.log('min max', min, max)
 
         return d3.scaleLinear()
           .domain([min, max])
@@ -620,11 +731,25 @@
 
       }
 
+      function updateText(selection, text) {
+        selection.transition()
+        .duration(1000)
+        .text(text)
+
+      }
+
+      function getStats(data, year) {
+        console.log(data, year)
+        return data.filter(d=>d3.timeFormat('%Y')(d.Year)===year)[0]
+      }
+
+      
+
       async function init() {
         const csv_url = './data_cleaning/cleaned_data_files/Census-Academic-Level.csv'
-        const margin = { top: 30, right: 100, bottom: 30, left: 60 }
+        const margin = { top: 30, right: 200, bottom: 30, left: 60 }
         const height = 500
-        const width = 768
+        const width = 900
         const newHeight = height - margin.top - margin.bottom
         const newWidth = width - margin.left - margin.right
 
@@ -651,12 +776,12 @@
 
 
 
-        console.log('line chart lineData', lineData)
-        console.log('x axis min max', d3.extent(lineData, d => d.Year))
+        // console.log('line chart lineData', lineData)
+        // console.log('x axis min max', d3.extent(lineData, d => d.Year))
         chart = initChart('#viz', width, height, margin)
         xScale = getXScale(lineData, newWidth)
         yScale = getYScale(lineData, newHeight)
-        console.log(d3.extent(lineData, d => d.Total))
+        // console.log(d3.extent(lineData, d => d.Total))
 
         chart
           .append("g")
@@ -686,10 +811,50 @@
           drawAnnotationPath(chart, lineData, d.data[0],
             d.data[1], xScale, yScale)
         })
+        const lastElement = lineData.slice(-1)[0]
+        const textX = xScale(xScale.domain().slice(-1)[0])+5
+        const firstTextY = yScale(lastElement.Total)+5
+        const textYear = chart.append('text')
+          .attr('class','line-year-text')
+          .attr('x',textX+6)
+          .attr('y',firstTextY)
+          .html(d3.timeFormat("%Y")(lastElement.Year))
 
+        const textChange = chart.append('text')
+          .attr('class','line-percentage')
+          .attr('x',textX)
+          .attr('y',firstTextY+25)
+          .text(`+${lastElement.Percentage.toFixed(2)}% vs last year`)
+
+        const textStudent = chart.append('text')
+        .attr('class','line-students')
+          .attr('x',textX+6)
+          .attr('y',firstTextY+50)
+          .text(`${numberWithCommas(lastElement.Total)} students`)
+
+
+        
+          
         const guide = createCircle(chart)
         const bisect = d3.bisector(d => d.x).left
-        console.log('line chart lineData', lineData)
+        
+        function onSelectUpdate(selectedValue) {
+            // console.log(selectedOption)
+            const filteredData = getStats(lineData, selectedValue)
+            updateText(textYear, selectedValue)
+            updateText(textChange, `+${filteredData.Percentage.toFixed(2)}% vs last year`)
+            updateText(textStudent, `${numberWithCommas(filteredData.Total)} students`)
+            
+        }
+        
+
+        d3.select(selectSelector).on(
+            'change.line', function (d) {
+              selectedOption = d3.select(this).property('value')
+              onSelectUpdate(selectedOption)
+            }
+          )
+        // console.log('line chart lineData', lineData)
         // function mousemove() {
         //   console.log( d3.event.pageX, d3.event.pageY )
         //   const x0 = xScale.invert(d3.mouse(this)[0])
