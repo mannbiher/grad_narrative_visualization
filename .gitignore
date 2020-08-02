@@ -106,6 +106,9 @@ dist
 # vscode IDE
 .vscode/
 
+# Libreoffice Lock files
+.~lock.*
+
 # secrets
 .secret
 .secrets

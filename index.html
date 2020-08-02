@@ -8,12 +8,17 @@
 </head>
 
 <body>
+  <h1>International Students in U.S.</h1>
+  <p></p>
+  <a href="#viz">1</a>
+  <a href="#viz2">2</a>
+  <a href="#viz3">3</a>
   <div id="viz">
   </div>
   <div id="viz2">
   </div>
+  <select id='viz3-year'></select>
   <div id="viz3">
-
   </div>
   <script src="https://d3js.org/d3.v5.min.js"></script>
   <script src="https://unpkg.com/topojson@3"></script>
@@ -47,6 +52,145 @@
 
     // global variables
     const width = 768
+
+  </script>
+  <script>
+      (function () {
+        const margin = { top: 10, right: 10, bottom: 30, left: 250 }
+        const height = 400
+        const width = 900
+        const newHeight = height - margin.top - margin.bottom
+        const newWidth = width - margin.left - margin.right
+        const svgSelector = '#viz3'
+        const selectSelector = '#viz3-year'
+
+        function getXScale(data, width) {
+          return d3.scaleLinear()
+            .domain([0, d3.max(data, d => d.Students)])
+            .range([0, width])
+        }
+
+        function getYScale(data, height) {
+          return d3.scaleBand()
+            .domain(data.map(d => d.Institutions))
+            .range([0, height])
+            .padding(.1)
+
+        }
+
+        function filterData(data, year) {
+          return data.filter(d => d.Year == year).slice(0, 10)
+
+        }
+        async function loadData() {
+          data = await d3.csv('/data_cleaning/cleaned_data_files/Census-Top-25-Institutions.csv')
+          data.forEach(d => {
+            d.Rank = +d.Rank
+            d.Year = d.Year.slice(0, 2) + d.Year.slice(5, 7)
+            d.Students = +d["Int'l Students"].replace(/,/g, '')
+            delete d["Int'l Students"]
+          })
+          return data
+        }
+
+        function updateSelect(selector, years) {
+          select = d3.select(selector)
+          years.forEach((d, i) => {
+
+            const option = select.append('option')
+              .attr('value', d)
+              .text(d)
+            if (i === 0) {
+              option.attr('selected', 'selected')
+
+            }
+          })
+
+
+        }
+
+
+
+        async function render() {
+          chart = initChart(svgSelector, width, height, margin)
+          origData = await loadData()
+          years = origData.map(d => d.Year)
+            .filter((d, i, arr) => arr.indexOf(d) === i)
+            .sort((a, b) => a < b)
+          selectYear = years[0]
+          updateSelect(selectSelector, years)
+          data = filterData(origData, selectYear)
+
+
+          xScale = getXScale(data, newWidth)
+          yScale = getYScale(data, newHeight)
+
+          xAxis = chart.append('g')
+            .attr('transform', `translate(0,${newHeight})`)
+            .call(d3.axisBottom(xScale))
+
+          yAxis = chart.append('g')
+            .call(d3.axisLeft(yScale))
+
+          const bars = chart.selectAll('myrect')
+            .data(data)
+            .enter()
+            .append('rect')
+            .attr('x', xScale(0))
+            .attr('y', d => yScale(d.Institutions))
+            .attr('width', d => xScale(d.Students))
+            .attr('height', yScale.bandwidth())
+            .attr('fill', 'steelblue')
+          console.log('bars', bars)
+
+          function onSelectUpdate(selectedValue) {
+            console.log(selectedOption)
+            data = filterData(origData, selectedOption)
+            xScale = getXScale(data, newWidth)
+            yScale = getYScale(data, newHeight)
+
+            xAxis.transition()
+              .duration(1000)
+              .call(d3.axisBottom(xScale))
+
+            yAxis.transition()
+              .duration(1000)
+              .call(d3.axisLeft(yScale))
+            console.log(data)
+
+            bars.data(data)
+              .enter()
+              .enter()
+              .append('rect')
+              .attr('x', xScale(0))
+              .attr('y', d => yScale(d.Institutions))
+              .attr('width', d => xScale(d.Students))
+              .attr('height', yScale.bandwidth())
+              .attr('fill', 'steelblue')
+
+
+            bars.transition()
+              .duration(1000)
+              .attr('x', xScale(0))
+              .attr('y', d => yScale(d.Institutions))
+              .attr('width', d => xScale(d.Students))
+              .attr('height', yScale.bandwidth())
+
+
+          }
+
+          d3.select(selectSelector).on(
+            'change', function (d) {
+              selectedOption = d3.select(this).property('value')
+              onSelectUpdate(selectedOption)
+            }
+          )
+
+
+        }
+
+        render()
+      })()
 
   </script>
   <script>
@@ -126,164 +270,289 @@
             .attr("width", yScale.bandwidth())
         }
 
-        init()
+        //init()
       })()
 
   </script>
   <script>
-    
+      (function () {
+        function filterData(data, year) {
 
-    function getPercentage(worldData, itemValue, year) {
-      for (const[key, value] of Object.entries(worldData)) {
-        if ((key.slice(0, 2) + key.slice(5, 7))==year) {
-          return itemValue/value*100
         }
-      }
 
-    }
-    async function loadData(year, mapData) {
+        async function loadData(year, mapData) {
 
-      data = await d3.csv('/data_cleaning/cleaned_data_files/Census-All-Places-of-Origin.csv')
-      // parse all numbers
-      data.forEach(d=>{
-        for (const [key, value] of Object.entries(d)) {
-          if (key != 'Place of Origin' && key != 'country_code') {
-            d[key] = +value.replaceAll(',','')
-          }
+          data = await d3.csv('/data_cleaning/cleaned_data_files/Census-All-Places-of-Origin.csv')
+          // parse all numbers
+          data.forEach(d => {
+            for (const [key, value] of Object.entries(d)) {
+              if (key != 'Place of Origin' && key != 'country_code'
+                && key != 'longitude' && key != 'latitude') {
+                new_key = key.slice(0, 2) + key.slice(5, 7)
+                d[new_key] = +value.replace(/,/g, '')
+                delete d[key]
+              }
+            }
+          })
+
+          // console.log('mapDisplayData', data)
+          worldData = data.filter(d => d['Place of Origin'] == 'WORLD TOTAL')[0]
+          console.log(worldData)
+          data = data.filter(d => d.country_code)
+          console.log('mapDisplayData', data)
+
+          data = data.map(d => {
+            let newdata = {
+              'country': d['Place of Origin'],
+              'country_code': d['country_code'],
+              'long': +d['longitude'],
+              'lat': +d['latitude']
+            }
+            for (const [key, value] of Object.entries(d)) {
+              if (key === year) {
+                newdata[year] = value / worldData[year] * 100
+              }
+            }
+            return newdata
+
+          }).sort((a, b) => a[year] < b[year]).slice(0, 10)
+
+
+          console.log('mapDisplayData', data)
+          return data
         }
-      })
 
-      // console.log('mapDisplayData', data)
-      worldData = data.filter(d => d['Place of Origin'] == 'WORLD TOTAL')
-      console.log(worldData)
-      data = data.filter(d => d.country_code)
-      console.log('mapDisplayData', data)
 
-      data = data.map(d=>{
-        let newdata = {
-          'country': d['Place of Origin'],
-          'country_code': d['country_code']
+        mapUrl = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
+        function initMap(world, projection) {
+          var svg = d3.select("#viz2").append("svg")
+            .attr('height', 550)
+            .attr('width', 900)
+
+
+
+          var path = d3.geoPath().projection(projection);
+
+          svg.selectAll("path")
+            .data(topojson.feature(world, world.objects.countries).features)
+            .enter().append("path")
+            .attr("d", path)
+            .attr('fill', '#E5E2E0')
+
+          return svg
+
         }
-        for (const [key, value] of Object.entries(d)) {
-          if ((key.slice(0, 2) + key.slice(5, 7))==year) {
-            newdata[year] = getPercentage(worldData,value,year)
-          }
+
+        async function loadMap(mapUrl) {
+          mapData = await d3.json(mapUrl)
+          mapDisplayData = await loadData('2019')
+          const projection = d3.geoMercator()
+            .scale(152)
+            .translate([400, 350])
+            .precision(.1)
+          svg = initMap(mapData, projection)
+          var size = d3.scaleLog()
+            .domain([1, 100])  // What's in the data
+            .range([1, 60])  // Size in pixel
+
+          var textScale = d3.scaleLinear()
+            .domain([1, 100])
+            .range([1, 10])
+
+
+
+          svg
+            .selectAll("myCircles")
+            .data(mapDisplayData)
+            .enter()
+            .append("circle")
+            .attr("cx", function (d) { return projection([d.long, d.lat])[0] })
+            .attr("cy", function (d) { return projection([d.long, d.lat])[1] })
+            .attr("r", function (d) { return size(d['2019']) })
+            .style("fill", "steelblue")
+            // .attr("stroke", "white")
+            // .attr("stroke-width", 1)
+            .attr("fill-opacity", .9)
+
+          svg
+            .selectAll('mapText')
+            .data(mapDisplayData)
+            .enter()
+            .append('text')
+            .attr('x', d => projection([d.long, d.lat])[0])
+            .attr('y', d => projection([d.long, d.lat])[1])
+            .text(d => Math.round(d['2019']) + '%')
+            .style('font-size', '14')
+            .style('font-weight', 'bold')
+            .style('font-family', 'sans-serif')
+            .attr('text-anchor', 'middle')
+
         }
-        return newdata      
-
-      })
 
 
-      console.log('mapDisplayData', data)
-      return data
-    }
-
-
-    mapUrl = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
-    function initMap(world) {
-      var svg = d3.select("#viz2").append("svg")
-        .attr('height', 400)
-        .attr('width', 768)
-      const projection = d3.geoMercator()
-        .scale(120)
-        .translate([400, 250])
-        .precision(.1)
-
-
-      var path = d3.geoPath().projection(projection);
-
-      svg.selectAll("path")
-        .data(topojson.feature(world, world.objects.countries).features)
-        .enter().append("path")
-        .attr("d", path)
-        .attr('fill', '#424244')
-
-    }
-
-    async function loadMap(mapUrl) {
-      mapData = await d3.json(mapUrl)
-      mapDisplayData = await loadData('2019')
-      initMap(mapData)
-    }
-
-
-    // Draw map
-    loadMap(mapUrl)
-
+        // Draw map
+        loadMap(mapUrl)
+      })();
   </script>
   <script>
+    (function () {
 
-    function getXScale(data, width) {
-      return d3.scaleTime()
-        .domain(d3.extent(data, d => d.Year))
-        .range([0, width])
+      function getAnnotations() {
+        return [{
+          'id': 'largest-increase',
+          'note': {
+            'label': 'Highest growth since 1980',
+            'title': '10% growth'
+          },
+          'data': [d3.timeParse('%Y')('2014'),d3.timeParse('%Y')('2015')],
+          'dx': 10,
+          'dy': 10
+        }]
+      }
 
-    }
+      /** Draw a circle between two data points */
+      function drawAnnotationCircle(chart, data, dataA, dataB, xScale, yScale) {
+        // get cx and cy first
+        firstPosx = xScale(dataA)
+        secondPosx = xScale(dataB)
+        
+        valueA = data.filter(d=>d.Year.getTime() === dataA.getTime())[0].Total
+        valueB = data.filter(d=>d.Year.getTime() === dataB.getTime())[0].Total
+        
+        firstPosy = yScale(valueA)
+        secondPosy = yScale(valueB)
+        
 
-    function getYScale(data, height) {
-      [min, max] = d3.extent(data, d => d.Total)
-      min = getNearestMin(min)
-      max = getNearestMax(max)
-      console.log('min max', min, max)
+        radius = Math.sqrt((secondPosy-firstPosy)**2 + (secondPosx-firstPosx)**2)/2
+        console.log('annotations', firstPosx, secondPosx, firstPosy, secondPosy, radius)
+        chart
+        .append('g')
+        .append('circle')
+        .attr('cx',(secondPosx + firstPosx)/2)
+        .attr('cy', (firstPosy + secondPosy)/2)
+        .attr('r',radius)
+        .attr('fill-opacity',0)
+        .attr('stroke','red')
+        .attr('stroke-width', 1)
 
-      return d3.scaleLinear()
-        .domain([min, max])
-        .range([height, 0])
+      }
 
-    }
+      function getXScale(data, width) {
+        return d3.scaleTime()
+          .domain(d3.extent(data, d => d.Year))
+          .range([0, width])
 
-    async function init() {
-      const csv_url = '/data_cleaning/cleaned_data_files/Census-Academic-Level.csv'
-      const margin = { top: 30, right: 100, bottom: 30, left: 60 }
-      const height = 400
-      const width = 768
-      const newHeight = height - margin.top - margin.bottom
-      const newWidth = width - margin.left - margin.right
+      }
 
+      function getYScale(data, height) {
+        [min, max] = d3.extent(data, d => d.Total)
+        min = getNearestMin(min)
+        max = getNearestMax(max)
+        console.log('min max', min, max)
 
-      data = await d3.csv(csv_url)
-      data = data.filter((d, i) => i % 2 === 0)
+        return d3.scaleLinear()
+          .domain([min, max])
+          .range([height, 0])
 
-      // data.forEach(d=>console.log(d.Year.slice(0,7)))
-      // clean data
-      data = data.map(d => ({
-        Year: d3.timeParse('%Y')(d.Year.slice(0, 2) + d.Year.slice(5, 7)),
-        Total: +d['TOTAL INTERNATIONAL STUDENTS']
-      }))
+      }
 
-      console.log('line chart data', data)
-      console.log('x axis min max', d3.extent(data, d => d.Year))
-      chart = initChart('#viz', width, height, margin)
-      xScale = getXScale(data, newWidth)
-      yScale = getYScale(data, newHeight)
-      console.log(d3.extent(data, d => d.Total))
+      function createCircle(chart) {
+        return chart.append('g')
+          .append('circle')
+          .style("fill", "steelblue")
+          .attr("stroke", "black")
+          .attr('r', 8.5)
+          .style("opacity", 1)
+      }
 
-      chart
-        .append("g")
-        .attr("transform", "translate(0," + newHeight + ")")
-        .call(d3.axisBottom(xScale))
+      function eventCapture(chart, newWidth, newHeight, mousemove) {
+        return chart.append('rect')
+          .style("fill", "none")
+          .style("pointer-events", "all")
+          .attr('width', newWidth)
+          .attr('height', newHeight)
+          // .on('mouseover', mouseover)
+          .on('mousemove', mousemove)
+          // .on('mouseout', mouseout);
 
+      }
 
-      chart.append('g')
-        // .attr('transform', `translate(50,0)`)
-        .call(d3.axisLeft(yScale))
-
-      chart.append("path")
-        .datum(data)
-        .attr("fill", "none")
-        .attr("stroke", "steelblue")
-        .attr("stroke-width", 1.5)
-        .attr("d", d3.line()
-          .x(d => xScale(d.Year))
-          .y(d => yScale(d.Total))
-        )
+      async function init() {
+        const csv_url = '/data_cleaning/cleaned_data_files/Census-Academic-Level.csv'
+        const margin = { top: 30, right: 100, bottom: 30, left: 60 }
+        const height = 500
+        const width = 600
+        const newHeight = height - margin.top - margin.bottom
+        const newWidth = width - margin.left - margin.right
 
 
-      console.log(data)
-    }
+        lineData = await d3.csv(csv_url)
+        lineData = lineData.filter((d, i) => i % 2 === 0)
 
-    init()
+        // clean lineData
+        lineData = lineData.map(d => ({
+          Year: d3.timeParse('%Y')(d.Year.slice(0, 2) + d.Year.slice(5, 7)),
+          Total: +d['TOTAL INTERNATIONAL STUDENTS']
+        }))
 
+        console.log('line chart lineData', lineData)
+        console.log('x axis min max', d3.extent(lineData, d => d.Year))
+        chart = initChart('#viz', width, height, margin)
+        xScale = getXScale(lineData, newWidth)
+        yScale = getYScale(lineData, newHeight)
+        console.log(d3.extent(lineData, d => d.Total))
+
+        chart
+          .append("g")
+          .attr("transform", "translate(0," + newHeight + ")")
+          .call(d3.axisBottom(xScale))
+
+
+        chart.append('g')
+          // .attr('transform', `translate(50,0)`)
+          .call(d3.axisLeft(yScale))
+
+        chart.append("path")
+          .datum(lineData)
+          .attr("fill", "none")
+          .attr("stroke", "steelblue")
+          .attr("stroke-width", 1.5)
+          .attr("d", d3.line()
+            .x(d => xScale(d.Year))
+            .y(d => yScale(d.Total))
+          )
+
+        annotations = getAnnotations()
+        annotations.forEach(d=>
+        {drawAnnotationCircle(chart, lineData, d.data[0], 
+          d.data[1], xScale, yScale)})
+        
+        const guide = createCircle(chart)
+        const bisect = d3.bisector(d => d.x).left
+        console.log('line chart lineData', lineData)
+        function mousemove() {
+          console.log( d3.event.pageX, d3.event.pageY )
+          const x0 = xScale.invert(d3.mouse(this)[0])
+          var i = bisect(lineData, x0, 1)
+      
+          selectedData = lineData[i]
+      
+          guide
+          .attr("cx", xScale(selectedData.Year))
+          .attr("cy", yScale(selectedData.Total))
+
+        }
+
+        const eventCaptureRect = eventCapture(
+          chart, newWidth, newHeight, mousemove)
+
+
+
+        // console.log(data)
+      }
+
+      init()
+    })()
   </script>
 </body>
 

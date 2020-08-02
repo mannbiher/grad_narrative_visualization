@@ -5,6 +5,18 @@ import pandas as pd
 import numpy as np
 
 
+def get_country_geolocation():
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    country_mapping = pd.read_csv(
+        dir_path + '/data_files/country_centroids_az8.csv', dtype=str)
+    country_mapping = country_mapping.iloc[:, [48, 66, 67]]
+    longitude_mapping = {row['iso_n3']: row['Longitude']
+                         for _, row in country_mapping.iterrows()}
+    latititude_mapping = {row['iso_n3']: row['Latitude']
+                          for _, row in country_mapping.iterrows()}
+    return longitude_mapping, latititude_mapping
+
+
 def get_country_isocode_mapping():
     dir_path = os.path.dirname(os.path.realpath(__file__))
     country_mapping = pd.read_csv(
@@ -13,9 +25,9 @@ def get_country_isocode_mapping():
     mapping = {row['official_name_en']: row['ISO3166-1-numeric']
                for _, row in country_mapping.iterrows()}
     # add missing countries > 1000 students
-    mapping['Taiwan']='158'
-    mapping['Hong Kong']='364'
-    mapping['Iran']='364'
+    mapping['Taiwan'] = '158'
+    mapping['Hong Kong'] = '364'
+    mapping['Iran'] = '364'
     mapping['North Korea'] = '408'
     mapping['South Korea'] = '410'
     mapping['Vietnam'] = '704'
@@ -23,8 +35,9 @@ def get_country_isocode_mapping():
     mapping['Venezuela'] = '862'
     mapping['Russia'] = '643'
     mapping['Bolivia'] = '068'
-    mapping['Côte d’Ivoire/Ivory Coast'] ='384'
+    mapping['Côte d’Ivoire/Ivory Coast'] = '384'
     return mapping
+
 
 def get_output_filename(path, out_folder):
     outfile = Path(path).stem + '.csv'
@@ -139,7 +152,12 @@ def clean_all_places_of_origin_csv():
     df = pd.read_csv(csv_file)
     # df = df.iloc[:264, 1:12]
     mapping = get_country_isocode_mapping()
+    longitude_mapping, latititude_mapping = get_country_geolocation()
     df = df.assign(country_code=df['Place of Origin'].map(mapping))
+    df = df.assign(longitude=df['country_code'].map(
+        longitude_mapping))
+    df = df.assign(latitude=df['country_code'].map(
+        latititude_mapping))
     df = df.replace('-', np.nan)
     print(df)
     # print(country_mapping)
@@ -157,3 +175,4 @@ if __name__ == "__main__":
     # clean_top25_institution('data_files/Census-Top-25-Institutions.xlsx',out_folder)
     # clean_top25_institution_csv()
     clean_all_places_of_origin_csv()
+    # get_country_geolocation()
