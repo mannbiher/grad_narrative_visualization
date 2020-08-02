@@ -90,7 +90,10 @@
             d.Students = +d["Int'l Students"].replace(/,/g, '')
             delete d["Int'l Students"]
           })
+
           return data
+
+
         }
 
         function updateSelect(selector, years) {
@@ -404,7 +407,17 @@
             'label': 'Highest growth since 1980',
             'title': '10% growth'
           },
-          'data': [d3.timeParse('%Y')('2014'),d3.timeParse('%Y')('2015')],
+          'data': [d3.timeParse('%Y')('2014'), d3.timeParse('%Y')('2015')],
+          'dx': 10,
+          'dy': 10
+        },
+        {
+          'id': 'smallest-increase',
+          'note': {
+            'label': 'Lowest growth since 2006',
+            'title': '0.05% growth'
+          },
+          'data': [d3.timeParse('%Y')('2018'), d3.timeParse('%Y')('2019')],
           'dx': 10,
           'dy': 10
         }]
@@ -415,31 +428,99 @@
         // get cx and cy first
         firstPosx = xScale(dataA)
         secondPosx = xScale(dataB)
-        
-        valueA = data.filter(d=>d.Year.getTime() === dataA.getTime())[0].Total
-        valueB = data.filter(d=>d.Year.getTime() === dataB.getTime())[0].Total
-        
+
+        valueA = data.filter(d => d.Year.getTime() === dataA.getTime())[0].Total
+        valueB = data.filter(d => d.Year.getTime() === dataB.getTime())[0].Total
+
         firstPosy = yScale(valueA)
         secondPosy = yScale(valueB)
-        
 
-        radius = Math.sqrt((secondPosy-firstPosy)**2 + (secondPosx-firstPosx)**2)/2
+
+        radius = Math.sqrt((secondPosy - firstPosy) ** 2 + (secondPosx - firstPosx) ** 2) / 2
         console.log('annotations', firstPosx, secondPosx, firstPosy, secondPosy, radius)
         chart
-        .append('g')
-        .append('circle')
-        .attr('cx',(secondPosx + firstPosx)/2)
-        .attr('cy', (firstPosy + secondPosy)/2)
-        .attr('r',radius)
-        .attr('fill-opacity',0)
-        .attr('stroke','red')
-        .attr('stroke-width', 1)
+          .append('g')
+          .append('circle')
+          .attr('cx', (secondPosx + firstPosx) / 2)
+          .attr('cy', (firstPosy + secondPosy) / 2)
+          .attr('r', radius)
+          .attr('fill-opacity', 0)
+          .attr('stroke', 'red')
+          .attr('stroke-width', 1)
+
+      }
+
+      function drawAnnotations(chart, data, annotation, xScale, yScale) {
+        [dataA, dataB] = annotation.data
+
+      }
+
+
+      function drawAnnotationPath(chart, data, dataA, dataB, xScale, yScale, color = 'red') {
+        firstPosx = xScale(dataA)
+        secondPosx = xScale(dataB)
+
+        valueA = data.filter(d => d.Year.getTime() === dataA.getTime())[0].Total
+        valueB = data.filter(d => d.Year.getTime() === dataB.getTime())[0].Total
+
+        firstPosy = yScale(valueA)
+        secondPosy = yScale(valueB)
+        const centerPosx = (firstPosx + secondPosx) / 2
+        const centerPosy = (firstPosy + secondPosy) / 2 - 20
+
+        const txtPosx = centerPosx - 100
+        const txtPosy = centerPosy - 100
+
+        textPathData = `M ${centerPosx} ${centerPosy} ` +
+          `L ${txtPosx} ${txtPosy}`
+
+        chart.append('path')
+          // .data(annotateData)
+          // .enter()
+          .attr('fill-opacity', 0)
+          .attr("stroke", color)
+          // .attr("stroke-width", 2)
+          .attr("d", textPathData)
+
+        chart.append('text')
+          .attr('x', txtPosx)
+          .attr('y', txtPosy)
+          .text('10% growth')
+          .attr('id', '')
+
+
+        const ticks = d3.selectAll("#viz svg g g g.tick line")
+          .attr('stroke-dasharray', (d, i) => {
+            if ([4, 5, 8, 9].includes(i)) {
+              return '5 5'
+            }
+
+          })
+          .attr('y2', (d, i) => {
+            if ([4, 5, 8, 9].includes(i)) {
+              return -yScale(yScale.domain()[0])
+            }
+          })
+
+
+        pathD = `M ${firstPosx} ${firstPosy} ` +
+          `L ${secondPosx} ${secondPosy} `
+
+        chart.append('path')
+          // .data(annotateData)
+          // .enter()
+          .attr('fill-opacity', 0)
+          .attr("stroke", color)
+          .attr("stroke-width", 2)
+          .attr("d", pathD)
 
       }
 
       function getXScale(data, width) {
+        [min, max] = d3.extent(data, d => d.Year)
+        // max =  new Date(max.setMonth(max.getMonth()+8))
         return d3.scaleTime()
-          .domain(d3.extent(data, d => d.Year))
+          .domain([min, max])
           .range([0, width])
 
       }
@@ -448,6 +529,8 @@
         [min, max] = d3.extent(data, d => d.Total)
         min = getNearestMin(min)
         max = getNearestMax(max)
+        // add 50,000 more 
+        max += 50000
         console.log('min max', min, max)
 
         return d3.scaleLinear()
@@ -473,7 +556,7 @@
           .attr('height', newHeight)
           // .on('mouseover', mouseover)
           .on('mousemove', mousemove)
-          // .on('mouseout', mouseout);
+        // .on('mouseout', mouseout);
 
       }
 
@@ -481,7 +564,7 @@
         const csv_url = '/data_cleaning/cleaned_data_files/Census-Academic-Level.csv'
         const margin = { top: 30, right: 100, bottom: 30, left: 60 }
         const height = 500
-        const width = 600
+        const width = 900
         const newHeight = height - margin.top - margin.bottom
         const newWidth = width - margin.left - margin.right
 
@@ -490,10 +573,23 @@
         lineData = lineData.filter((d, i) => i % 2 === 0)
 
         // clean lineData
-        lineData = lineData.map(d => ({
-          Year: d3.timeParse('%Y')(d.Year.slice(0, 2) + d.Year.slice(5, 7)),
-          Total: +d['TOTAL INTERNATIONAL STUDENTS']
-        }))
+        lineData = lineData.map((d, i, arr) => {
+          totalStudents = +d['TOTAL INTERNATIONAL STUDENTS']
+          newData = {
+            Year: d3.timeParse('%Y')(d.Year.slice(0, 2) + d.Year.slice(5, 7)),
+            Total: totalStudents
+          }
+          // calculate percentage increase
+          if (i == 0) {
+            newData.Percentage = 0
+          } else {
+            lastStudents = +arr[i - 1]['TOTAL INTERNATIONAL STUDENTS']
+            newData.Percentage = +((totalStudents - lastStudents) / lastStudents * 100).toFixed(2)
+          }
+          return newData
+        })
+
+
 
         console.log('line chart lineData', lineData)
         console.log('x axis min max', d3.extent(lineData, d => d.Year))
@@ -505,13 +601,17 @@
         chart
           .append("g")
           .attr("transform", "translate(0," + newHeight + ")")
-          .call(d3.axisBottom(xScale))
+          .call(d3.axisBottom(xScale)
+            // .tickSize(-newHeight)
+
+          )
 
 
         chart.append('g')
           // .attr('transform', `translate(50,0)`)
           .call(d3.axisLeft(yScale))
 
+        console.log('xaxis', xScale(new Date('Jan 01 2014 00:00:00')), xScale(new Date('Jan 01 2015 00:00:00')))
         chart.append("path")
           .datum(lineData)
           .attr("fill", "none")
@@ -523,28 +623,29 @@
           )
 
         annotations = getAnnotations()
-        annotations.forEach(d=>
-        {drawAnnotationCircle(chart, lineData, d.data[0], 
-          d.data[1], xScale, yScale)})
-        
+        annotations.forEach(d => {
+          drawAnnotationPath(chart, lineData, d.data[0],
+            d.data[1], xScale, yScale)
+        })
+
         const guide = createCircle(chart)
         const bisect = d3.bisector(d => d.x).left
         console.log('line chart lineData', lineData)
-        function mousemove() {
-          console.log( d3.event.pageX, d3.event.pageY )
-          const x0 = xScale.invert(d3.mouse(this)[0])
-          var i = bisect(lineData, x0, 1)
-      
-          selectedData = lineData[i]
-      
-          guide
-          .attr("cx", xScale(selectedData.Year))
-          .attr("cy", yScale(selectedData.Total))
+        // function mousemove() {
+        //   console.log( d3.event.pageX, d3.event.pageY )
+        //   const x0 = xScale.invert(d3.mouse(this)[0])
+        //   var i = bisect(lineData, x0, 1)
 
-        }
+        //   selectedData = lineData[i]
 
-        const eventCaptureRect = eventCapture(
-          chart, newWidth, newHeight, mousemove)
+        //   guide
+        //   .attr("cx", xScale(selectedData.Year))
+        //   .attr("cy", yScale(selectedData.Total))
+
+        // }
+
+        // const eventCaptureRect = eventCapture(
+        //   chart, newWidth, newHeight, mousemove)
 
 
 
