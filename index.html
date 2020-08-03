@@ -402,6 +402,62 @@
 
         }
 
+        function annotation(mapData, projection, size, chart) {
+          const pathId = 'map-annotation'
+          const textId = 'map-annotation-text'
+          countries = ['China', 'India']
+          countriesData = mapData.filter(
+            d => countries.includes(d.country))
+          points = countriesData.map(d => projection([d.long, d.lat]))
+          sizes = countriesData.map(d => size(d.percentage))
+          totalPercentage = countriesData.reduce((a, d) => a + d.percentage, 0)
+
+          xPosChina = points[0][0]
+          yPosChina = points[0][1] - sizes[0] - 5
+          xPosIndia = points[1][0]
+          yPosIndia = points[1][1] - sizes[1] - 5
+
+          xmidPoint = (xPosChina + xPosIndia) / 2
+          ymidPoint = yPosChina - 10
+          yfinalPoint = ymidPoint - 30
+
+
+
+          dPath = `M ${xPosIndia} ${yPosIndia} ` +
+            `L ${xPosIndia} ${ymidPoint} ` +
+            `L ${xPosChina} ${ymidPoint} ` +
+            `L ${xPosChina} ${yPosChina} ` +
+            `L ${xPosChina} ${ymidPoint} ` +
+            `L ${xmidPoint} ${ymidPoint} ` +
+            `L ${xmidPoint} ${yfinalPoint} `
+
+          console.log(dPath)
+
+          chart.select('#' + pathId).remove()
+          chart.append('path')
+            .attr('id', pathId)
+            .attr('fill-opacity', 0)
+            .attr("stroke", 'red')
+            .attr("stroke-width", 2)
+            .attr("d", dPath)
+
+          chart.select('#' + textId).remove()
+          annotationText = `${totalPercentage.toFixed(0)}% students from China and India`
+          chart.append('text')
+            .attr('id', textId)
+            .attr('x', xmidPoint - 100)
+            .attr('y', yfinalPoint - 5)
+            .text(annotationText)
+
+
+
+
+
+
+          console.log('points', points, sizes)
+
+        }
+
         async function loadMap(mapUrl) {
           const mapData = await d3.json(mapUrl)
           const mapOriginalDisplayData = await loadData()
@@ -455,6 +511,9 @@
             .style('font-family', 'sans-serif')
             .attr('text-anchor', 'middle')
 
+
+          annotation(mapDisplayData, projection, size, svg)
+
           const mapTipDiv = createTooltip('tooltip')
           circles
             .on('mouseover', function (d, i) {
@@ -466,7 +525,8 @@
                 .duration(50)
                 .style("opacity", 1)
 
-              const html = `<p>${d.country}: ${d.percentage.toFixed(2)}</p>`
+              const html = `<p>${d.country}` +
+                `: ${numberWithCommas(d.students)} Students</p>`
 
               mapTipDiv.html(html)
                 .style("left", (d3.event.pageX + 10) + "px")
@@ -493,7 +553,10 @@
                 .duration(50)
                 .style("opacity", 1)
 
-              const html = `<p>${d.country}: ${d.percentage.toFixed(2)}</p>`
+                const html = `<p>${d.country}` +
+                `: ${numberWithCommas(d.students)} Students</p>`
+
+
 
               mapTipDiv.html(html)
                 .style("left", (d3.event.pageX + 10) + "px")
@@ -550,6 +613,7 @@
               .attr('y', d => projection([d.long, d.lat])[1])
               .text(d => Math.round(d.percentage) + '%')
 
+            annotation(filteredData, projection, size, svg)
           }
 
 
@@ -862,14 +926,14 @@
 
         const guide = createCircle(chart, lastPointX, lastPointY)
         // event capture
-        captureRect = chart.append('rect')
-          .style("fill", "none")
-          .style("pointer-events", "all")
-          .attr('width', newWidth)
-          .attr('height', newHeight)
-          .on('mouseover', () => guide.style("opacity", 1))
-          .on('mousemove', mousemove)
-          .on('mouseout', () => guide.style("opacity", 0))
+        // captureRect = chart.append('rect')
+        //   .style("fill", "none")
+        //   .style("pointer-events", "all")
+        //   .attr('width', newWidth)
+        //   .attr('height', newHeight)
+        //   .on('mouseover', () => guide.style("opacity", 1))
+        //   .on('mousemove', mousemove)
+        //   .on('mouseout', () => guide.style("opacity", 0))
 
 
 
