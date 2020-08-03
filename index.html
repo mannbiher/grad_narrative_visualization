@@ -710,40 +710,43 @@
 
       }
 
-      function createCircle(chart) {
+      function createCircle(chart, x, y) {
         return chart.append('g')
           .append('circle')
           .style("fill", "steelblue")
           .attr("stroke", "black")
+          .attr('cx', x)
+          .attr('cy', y)
           .attr('r', 8.5)
           .style("opacity", 1)
       }
 
-      function eventCapture(chart, newWidth, newHeight, mousemove) {
-        return chart.append('rect')
-          .style("fill", "none")
-          .style("pointer-events", "all")
-          .attr('width', newWidth)
-          .attr('height', newHeight)
-          // .on('mouseover', mouseover)
-          .on('mousemove', mousemove)
-        // .on('mouseout', mouseout);
 
-      }
 
       function updateText(selection, text) {
         selection.transition()
-        .duration(1000)
-        .text(text)
+          .duration(1000)
+          .text(text)
 
       }
 
       function getStats(data, year) {
-        console.log(data, year)
-        return data.filter(d=>d3.timeFormat('%Y')(d.Year)===year)[0]
+        console.log('getstats', data, year)
+        return data.filter(d => d3.timeFormat('%Y')(d.Year) === year)[0]
       }
 
-      
+
+      function roundDate(date) {
+        month = date.getMonth()
+        year = date.getFullYear()
+        console.log(date.getMonth(), date.getFullYear())
+        if (month <= 5) {
+          return new Date(year, 0, 1, 0, 0, 0, 0)
+        } else {
+          return new Date(year + 1, 0, 1, 0, 0, 0, 0)
+        }
+      }
+
 
       async function init() {
         const csv_url = './data_cleaning/cleaned_data_files/Census-Academic-Level.csv'
@@ -811,62 +814,79 @@
           drawAnnotationPath(chart, lineData, d.data[0],
             d.data[1], xScale, yScale)
         })
+
+
         const lastElement = lineData.slice(-1)[0]
-        const textX = xScale(xScale.domain().slice(-1)[0])+5
-        const firstTextY = yScale(lastElement.Total)+5
+        const lastPointX = xScale(lastElement.Year)
+        const lastPointY = yScale(lastElement.Total)
+
         const textYear = chart.append('text')
-          .attr('class','line-year-text')
-          .attr('x',textX+6)
-          .attr('y',firstTextY)
+          .attr('class', 'line-year-text')
+          .attr('x', lastPointX + 13)
+          .attr('y', lastPointY)
           .html(d3.timeFormat("%Y")(lastElement.Year))
 
         const textChange = chart.append('text')
-          .attr('class','line-percentage')
-          .attr('x',textX)
-          .attr('y',firstTextY+25)
+          .attr('class', 'line-percentage')
+          .attr('x', lastPointX + 5)
+          .attr('y', lastPointY + 25)
           .text(`+${lastElement.Percentage.toFixed(2)}% vs last year`)
 
         const textStudent = chart.append('text')
-        .attr('class','line-students')
-          .attr('x',textX+6)
-          .attr('y',firstTextY+50)
+          .attr('class', 'line-students')
+          .attr('x', lastPointX + 13)
+          .attr('y', lastPointY + 50)
           .text(`${numberWithCommas(lastElement.Total)} students`)
 
 
-        
-          
-        const guide = createCircle(chart)
-        const bisect = d3.bisector(d => d.x).left
-        
-        function onSelectUpdate(selectedValue) {
-            // console.log(selectedOption)
-            const filteredData = getStats(lineData, selectedValue)
-            updateText(textYear, selectedValue)
-            updateText(textChange, `+${filteredData.Percentage.toFixed(2)}% vs last year`)
-            updateText(textStudent, `${numberWithCommas(filteredData.Total)} students`)
-            
+
+
+
+
+        function onSelectUpdate(year) {
+          // console.log(selectedOption)
+          const filteredData = getStats(lineData, year)
+          updateText(textYear, year)
+          updateText(textChange, `+${filteredData.Percentage.toFixed(2)}% vs last year`)
+          updateText(textStudent, `${numberWithCommas(filteredData.Total)} students`)
+
         }
-        
+
 
         d3.select(selectSelector).on(
-            'change.line', function (d) {
-              selectedOption = d3.select(this).property('value')
-              onSelectUpdate(selectedOption)
-            }
-          )
-        // console.log('line chart lineData', lineData)
-        // function mousemove() {
-        //   console.log( d3.event.pageX, d3.event.pageY )
-        //   const x0 = xScale.invert(d3.mouse(this)[0])
-        //   var i = bisect(lineData, x0, 1)
+          'change.line', function (d) {
+            selectedOption = d3.select(this).property('value')
+            onSelectUpdate(selectedOption)
+          }
+        )
 
-        //   selectedData = lineData[i]
+        const guide = createCircle(chart, lastPointX, lastPointY)
+        // event capture
+        captureRect = chart.append('rect')
+          .style("fill", "none")
+          .style("pointer-events", "all")
+          .attr('width', newWidth)
+          .attr('height', newHeight)
+          .on('mouseover', () => guide.style("opacity", 1))
+          .on('mousemove', mousemove)
+          .on('mouseout', () => guide.style("opacity", 0))
 
-        //   guide
-        //   .attr("cx", xScale(selectedData.Year))
-        //   .attr("cy", yScale(selectedData.Total))
 
-        // }
+
+        function mousemove() {
+          // console.log(d3.event.pageX, d3.event.pageY)
+          const x0 = xScale.invert(d3.mouse(this)[0])
+          // change date to nearest year
+          const date = roundDate(x0)
+          console.log('line data', lineData, date)
+          // const point = lineData.filter(d=> d.Year === date)[0]
+          // console.log('selected', point, console.log(lineData))
+          // guide
+          //   .attr("cx", xScale(selectedData.Year))
+          //   .attr("cy", yScale(selectedData.Total))
+          // onSelectUpdate(d3.timeFormat('%Y')(selectedData.Year))
+
+        }
 
         // const eventCaptureRect = eventCapture(
         //   chart, newWidth, newHeight, mousemove)
