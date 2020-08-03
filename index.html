@@ -19,6 +19,10 @@
       pointer-events: none;
       font-size: .8rem;
     }
+
+    div.hide {
+      display: none;
+    }
   </style>
 </head>
 
@@ -126,6 +130,17 @@
 
 
         })
+        if (targetId !== 'viz') {
+          someRect = d3.select('#capture-rect')
+            .attr('class', 'hide')
+
+
+
+
+        } else {
+          d3.select('#capture-rect')
+            .attr('class', null)
+        }
 
       }
     }
@@ -178,9 +193,9 @@
   </script>
   <script>
       (function () {
-        const margin = { top: 10, right: 10, bottom: 30, left: 250 }
+        const margin = { top: 10, right: 200, bottom: 30, left: 200 }
         const height = 400
-        const width = 768
+        const width = 900
         const newHeight = height - margin.top - margin.bottom
         const newWidth = width - margin.left - margin.right
         const svgSelector = '#viz3'
@@ -234,10 +249,76 @@
 
         }
 
+        function annotateBar(data, xScale, yScale, chart) {
+          const textId1 = 'bar-annotation-text-1'
+          const textId2 = 'bar-annotation-text-2'
+
+          const annotations = [{
+            'institute': 'New York University',
+            'text': '1st Rank from last 6 years'
+          }, {
+            'institute': 'University of Illinois - Urbana-Champaign',
+            'text': 'In top 6 from last 10 years'
+          }]
+
+          institutes = annotations.map(d => d.institute)
+          annotateText = annotations.map(d => d.text)
+
+
+
+          points = data.sort((a, b) => {
+            if (a.Institutions < b.Institutions) { return -1 }
+            if (a.Institutions > b.Institutions) { return 1 }
+            return 0
+          }).filter(d => institutes.includes(d.Institutions))
+            .map(d => [xScale(d.Students), yScale(d.Institutions)])
+
+          console.log('bar points', points, chart)
+
+          d3.select('#' + textId1)
+            .transition()
+            .duration(100)
+            .remove()
+
+
+          yPos1 = points[0][1] + yScale.bandwidth() / 2
+
+          chart.append('text')
+            .transition()
+            .duration(1000)
+            .attr('id', textId1)
+            .attr('class', 'bar-annotate')
+            .attr('x', points[0][0] + 5)
+            .attr('y', yPos1 + yScale.bandwidth() / 8)
+            .text(annotateText[0])
+          // .attr('fill', 'red')
+
+          yPos2 = points[1][1] + yScale.bandwidth() / 2
+
+          d3.select('#' + textId2)
+            .transition()
+            .duration(100)
+            .remove()
+
+          chart.append('text')
+            .transition()
+            .duration(1000)
+            .attr('id', textId2)
+            .attr('class', 'bar-annotate-2')
+            .attr('x', points[1][0] + 5)
+            .attr('y', yPos2 + yScale.bandwidth() / 8)
+            .text(annotateText[1])
+          // .attr('fill', 'red')
+
+
+
+
+        }
+
 
 
         async function render() {
-          chart = initChart(svgSelector, width, height, margin)
+          const barChart = initChart(svgSelector, width, height, margin)
           origData = await loadData()
           years = origData.map(d => d.Year)
             .filter((d, i, arr) => arr.indexOf(d) === i)
@@ -250,17 +331,17 @@
           xScale = getXScale(data, newWidth)
           yScale = getYScale(data, newHeight)
 
-          xAxis = chart.append('g')
+          xAxis = barChart.append('g')
             .attr('transform', `translate(0,${newHeight})`)
             .call(d3.axisBottom(xScale))
 
-          yAxis = chart.append('g')
+          yAxis = barChart.append('g')
             .call(d3.axisLeft(yScale))
 
           // tooltip div
           tipDiv = createTooltip(tooltipClass)
 
-          const bars = chart.selectAll('myrect')
+          const bars = barChart.selectAll('myrect')
             .data(data)
             .enter()
             .append('rect')
@@ -292,6 +373,9 @@
                 .style("opacity", 0);
             })
           // console.log('bars', bars)
+
+
+          annotateBar(data, xScale, yScale, barChart)
 
           function onSelectUpdate(selectedValue) {
             // console.log(selectedOption)
@@ -326,6 +410,7 @@
               .attr('width', d => xScale(d.Students))
               .attr('height', yScale.bandwidth())
 
+            annotateBar(data, xScale, yScale, barChart)
 
           }
 
@@ -553,7 +638,7 @@
                 .duration(50)
                 .style("opacity", 1)
 
-                const html = `<p>${d.country}` +
+              const html = `<p>${d.country}` +
                 `: ${numberWithCommas(d.students)} Students</p>`
 
 
@@ -635,32 +720,11 @@
     // Line chart
     (function () {
 
-      function getAnnotations() {
-        return [{
-          'id': 'largest-increase',
-          'note': {
-            'label': 'Highest growth since 1980',
-            'title': '10% growth'
-          },
-          'data': [d3.timeParse('%Y')('2014'), d3.timeParse('%Y')('2015')],
-          'dx': 10,
-          'dy': 10
-        },
-        {
-          'id': 'smallest-increase',
-          'note': {
-            'label': 'Lowest growth since 2006',
-            'title': '0.05% growth'
-          },
-          'data': [d3.timeParse('%Y')('2018'), d3.timeParse('%Y')('2019')],
-          'dx': 10,
-          'dy': 10
-        }]
-      }
-
+      
       /** Draw a circle between two data points */
       function drawAnnotationCircle(chart, data, dataA, dataB, xScale, yScale) {
         // get cx and cy first
+
         firstPosx = xScale(dataA)
         secondPosx = xScale(dataB)
 
@@ -685,13 +749,10 @@
 
       }
 
-      function drawAnnotations(chart, data, annotation, xScale, yScale) {
-        [dataA, dataB] = annotation.data
 
-      }
-
-
-      function drawAnnotationPath(chart, data, dataA, dataB, xScale, yScale, color = 'red') {
+      function highLightPath(chart, data, xScale, yScale, point) {
+        dataA = point[0]
+        dataB = point[1]
         firstPosx = xScale(dataA)
         secondPosx = xScale(dataB)
 
@@ -700,29 +761,24 @@
 
         firstPosy = yScale(valueA)
         secondPosy = yScale(valueB)
-        const centerPosx = (firstPosx + secondPosx) / 2
-        const centerPosy = (firstPosy + secondPosy) / 2 - 20
-
-        const txtPosx = centerPosx - 100
-        const txtPosy = centerPosy - 100
-
-        textPathData = `M ${centerPosx} ${centerPosy} ` +
-          `L ${txtPosx} ${txtPosy}`
+        pathD = `M ${firstPosx} ${firstPosy} ` +
+          `L ${secondPosx} ${secondPosy} `
 
         chart.append('path')
           // .data(annotateData)
           // .enter()
           .attr('fill-opacity', 0)
-          .attr("stroke", color)
-          // .attr("stroke-width", 2)
-          .attr("d", textPathData)
+          .attr("stroke", 'red')
+          .attr("stroke-width", 2)
+          .attr("d", pathD)
+        return [[firstPosx, firstPosy], [secondPosx, secondPosy]]
+      }
 
-        chart.append('text')
-          .attr('x', txtPosx)
-          .attr('y', txtPosy)
-          .text('10% growth')
-          .attr('id', '')
 
+
+      function drawAnnotationLine(chart, data, xScale, yScale) {
+        data1 = [d3.timeParse('%Y')('2014'), d3.timeParse('%Y')('2015')]
+        data2 = [d3.timeParse('%Y')('2018'), d3.timeParse('%Y')('2019')]
 
         const ticks = d3.selectAll("#viz svg g g g.tick line")
           .attr('stroke-dasharray', (d, i) => {
@@ -737,17 +793,62 @@
             }
           })
 
+        let points = highLightPath(chart, data, xScale, yScale, data1)
+        const [firstPosx, firstPosy] = points[0]
+        const [secondPosx, secondPosy] = points[1]
+        const centerPosx = (firstPosx + secondPosx) / 2
+        const centerPosy = (firstPosy + secondPosy) / 2 - 20
 
-        pathD = `M ${firstPosx} ${firstPosy} ` +
-          `L ${secondPosx} ${secondPosy} `
+        const txtPosx = centerPosx - 100
+        const txtPosy = centerPosy - 100
+
+        textPathData = `M ${centerPosx} ${centerPosy} ` +
+          `L ${txtPosx} ${txtPosy}`
+
 
         chart.append('path')
+          .attr('id', 'line-text-path')
           // .data(annotateData)
           // .enter()
           .attr('fill-opacity', 0)
-          .attr("stroke", color)
+          .attr("stroke", 'red')
           .attr("stroke-width", 2)
-          .attr("d", pathD)
+          .attr("d", textPathData)
+
+        chart.append('text')
+          .attr('id', 'high-growth')
+          .attr('x', txtPosx - 100)
+          .attr('y', txtPosy - 10)
+          .text('10% growth highest since 1980')
+
+        points = highLightPath(chart, data, xScale, yScale, data2)
+
+          const [firstPosx2, firstPosy2] = points[0]
+        const [secondPosx2, secondPosy2] = points[1]
+        const centerPosx2 = (firstPosx2 + secondPosx2) / 2
+        const centerPosy2 = (firstPosy2 + secondPosy2) / 2 + 10
+
+        const txtPosx2 = centerPosx2 - 100
+        const txtPosy2 = centerPosy2 + 100
+
+        textPathData2 = `M ${centerPosx2} ${centerPosy2} ` +
+          `L ${txtPosx2} ${txtPosy2}`
+
+        chart.append('path')
+          .attr('id', 'line-text-path-2')
+          // .data(annotateData)
+          // .enter()
+          .attr('fill-opacity', 0)
+          .attr("stroke", 'red')
+          .attr("stroke-width", 2)
+          .attr("d", textPathData2)
+
+        chart.append('text')
+          .attr('id', 'low-growth')
+          .attr('x', txtPosx2 - 70)
+          .attr('y', txtPosy2 + 20 )
+          .text('0.05% lowest since 2006')
+          
 
       }
 
@@ -846,8 +947,8 @@
         // console.log('line chart lineData', lineData)
         // console.log('x axis min max', d3.extent(lineData, d => d.Year))
         chart = initChart('#viz', width, height, margin)
-        xScale = getXScale(lineData, newWidth)
-        yScale = getYScale(lineData, newHeight)
+        const xScale = getXScale(lineData, newWidth)
+        const yScale = getYScale(lineData, newHeight)
         // console.log(d3.extent(lineData, d => d.Total))
 
         chart
@@ -873,11 +974,7 @@
             .y(d => yScale(d.Total))
           )
 
-        annotations = getAnnotations()
-        annotations.forEach(d => {
-          drawAnnotationPath(chart, lineData, d.data[0],
-            d.data[1], xScale, yScale)
-        })
+        drawAnnotationLine(chart, lineData, xScale, yScale)
 
 
         const lastElement = lineData.slice(-1)[0]
@@ -904,15 +1001,22 @@
 
 
 
+        const guide = createCircle(chart, lastPointX, lastPointY)
 
 
-
-        function onSelectUpdate(year) {
+        function onSelectUpdateLine(year) {
           // console.log(selectedOption)
+
           const filteredData = getStats(lineData, year)
           updateText(textYear, year)
           updateText(textChange, `+${filteredData.Percentage.toFixed(2)}% vs last year`)
           updateText(textStudent, `${numberWithCommas(filteredData.Total)} students`)
+          console.log(filteredData, yScale(filteredData.Total))
+          guide
+            // .transition()
+            // .duration(100)
+            .attr("cx", xScale(filteredData.Year))
+            .attr("cy", yScale(filteredData.Total))
 
         }
 
@@ -920,20 +1024,20 @@
         d3.select(selectSelector).on(
           'change.line', function (d) {
             selectedOption = d3.select(this).property('value')
-            onSelectUpdate(selectedOption)
+            onSelectUpdateLine(selectedOption)
           }
         )
 
-        const guide = createCircle(chart, lastPointX, lastPointY)
+
         // event capture
-        // captureRect = chart.append('rect')
-        //   .style("fill", "none")
-        //   .style("pointer-events", "all")
-        //   .attr('width', newWidth)
-        //   .attr('height', newHeight)
-        //   .on('mouseover', () => guide.style("opacity", 1))
-        //   .on('mousemove', mousemove)
-        //   .on('mouseout', () => guide.style("opacity", 0))
+        captureRect = chart.append('rect')
+          .attr('id', 'capture-rect')
+          .style("fill", "none")
+          .style("pointer-events", "all")
+          .attr('width', newWidth)
+          .attr('height', newHeight)
+          .on('mouseover', () => guide.style("opacity", 1))
+          .on('mousemove', mousemove)
 
 
 
@@ -941,14 +1045,9 @@
           // console.log(d3.event.pageX, d3.event.pageY)
           const x0 = xScale.invert(d3.mouse(this)[0])
           // change date to nearest year
+          console.log('captured', x0)
           const date = roundDate(x0)
-          console.log('line data', lineData, date)
-          // const point = lineData.filter(d=> d.Year === date)[0]
-          // console.log('selected', point, console.log(lineData))
-          // guide
-          //   .attr("cx", xScale(selectedData.Year))
-          //   .attr("cy", yScale(selectedData.Total))
-          // onSelectUpdate(d3.timeFormat('%Y')(selectedData.Year))
+          onSelectUpdateLine(d3.timeFormat('%Y')(date))
 
         }
 
