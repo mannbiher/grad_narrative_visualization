@@ -29,6 +29,11 @@
 <body>
   <div class=container>
     <h1>International Students in U.S.</h1>
+    <div class="row">
+      <p>In July 2020, There was a fear among international students in U.S. to be deported if they could not attend any offline class. 
+        As part of this visualization, we are going to take a look at international students in U.S.</p>
+        <p>You can use navigation bar below to navigate to different pages. You can also use mouse over an item to see extra details.</p>
+    </div>
     <nav>
       <ul class="pagination">
         <li class="page-item active"><a class="page-link" href="#" id="viz-link">1</a></li>
@@ -40,13 +45,29 @@
       </ul>
     </nav>
     <div class="row">
-      <select id='year-select'></select>
+      <select id='year-select' style="display: inline-block"></select>
+      <span>Change Year to see statistics for different year.</span>
     </div>
     <div id="viz" class="row">
+      <h3>How many?</h3>
+      <p>
+        In 2018/19 1,095,299 international students were in the U.S., including those in academic studies programs and Optional Practical Training (OPT)
+      </p>
     </div>
     <div id="viz2" class="row" style="display: none;">
+      <h3>From Where?</h3>
+      <p>
+        50% of international students from India and China. By changing year, you could see how Asia has become the primary source of international students in U.S.
+      </p>
     </div>
     <div id="viz3" class="row" style="display: none;">
+      <h3>Where To?</h3>
+      <p>
+        These institutions are primary choice and destination of international students.
+      </p>
+    </div>
+    <div class="row">
+      <p>Data source <a href="https://opendoorsdata.org/data/international-students/>">Opendoor</a></p>
     </div>
   </div>
 
@@ -194,7 +215,7 @@
   <script>
       (function () {
         const margin = { top: 10, right: 200, bottom: 30, left: 200 }
-        const height = 400
+        const height = 500
         const width = 900
         const newHeight = height - margin.top - margin.bottom
         const newWidth = width - margin.left - margin.right
