@@ -12,7 +12,7 @@ Narrative Visualization Project for Graduation Course
 
   * NOT ALLOWED d3 scale chromatic, d3-annotation, d3-geo-projection
 
-* Your project will be graded best if you clearly stick to one of the forms: martini glass, interactive slide show or drill down story, and your scenes are individual pages.
+* Stick to one of the forms: martini glass, interactive slide show or drill down story, and your scenes are individual pages.
 
 * You could lose a few points for hard-coding data in your source code.
 
